@@ -17,3 +17,6 @@ class Score:
         self.current_score = self.max_trials
 
 
+    def reset(self):
+        self.current_score = self.max_trials
+        self.total_score = 0

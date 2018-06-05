@@ -7,6 +7,35 @@ from cls.alphabet import *
 from cls.score import *
 from cls.game import *
 
+# Print text and align to the right
+def print_text_right(text, font, color, right_px, top_px):
+    text_screen = font.render(text, False, color)
+    text_screen_rect = text_screen.get_rect()
+    text_screen_rect.top = top_px
+    text_screen_rect.right = right_px
+    
+    screen.blit(text_screen, text_screen_rect)
+
+def print_text_left(text, font, color, left_px, top_px):
+    text_screen = font.render(text, False, color)
+    text_screen_rect = text_screen.get_rect()
+    text_screen_rect.top = top_px
+    text_screen_rect.left = left_px
+    
+    screen.blit(text_screen, text_screen_rect)
+
+def print_keywords(kw_list, color):
+    a = 30; b = 0
+    for word in kw_list:
+        word = word + " "
+        if len(word) > a: a = 30; b +=1
+        for c in word:
+            print_text_left(c, keyword_font, color, 550 + (30-a)*35, 100 + b*60)
+            a -= 1
+
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
 
 # Initialize list with available keywords
 Keyword.initialize_list()
@@ -30,19 +59,20 @@ player.rect.x = 400
 player.rect.y = 0
 
 # Sprites group will be used to render sprites (player and letters) on the screen
-all_sprites_group = pygame.sprite.Group()
+all_sprites_group_main = pygame.sprite.Group(); all_sprites_group = pygame.sprite.Group()
 all_sprites_group.add(player)
 
 # all_letters list will contain available alphabet letters and will be used in player-letter collision detection 
-all_letters = []
+all_letters_main = []; all_letters = []
 i = 1; j = 1
 for letter in string.ascii_uppercase:
     letter = GameObject("graphics/letter_%s.bmp" %(letter,), letter = letter)
     letter.rect.x = 500 + i * letter.rect.width
     letter.rect.y = 400 + j * letter.rect.height
 
-    all_letters.append(letter)
-    all_sprites_group.add(letter)
+    # main will be used to refresh alphabet each level, w/o main will be used inside single level loop
+    all_letters_main.append(letter); all_letters = list(all_letters_main)
+    all_sprites_group_main.add(letter); all_sprites_group = all_sprites_group_main.copy()
 
     i += 2
     if i%19 == 0:   # 9 letters/columns per row, then go to next row
@@ -51,6 +81,7 @@ for letter in string.ascii_uppercase:
 
 clock = pygame.time.Clock()
 game_on = True
+
 
 
 while game_on:
@@ -69,24 +100,8 @@ while game_on:
 
         # Prepare drawing hidden keyword on the screen 
         # (black for displaying on screen, white for erasing when player guesses a letter)
-        keyword_hidden_screen = keyword_font.render(keyword.hidden, False, (0, 0, 0))
-        keyword_hidden_wipe = keyword_font.render(keyword.hidden, False, (255, 255, 255))
-
-        score_total_screen = scores_font.render("Total score: " + str(score.total_score), False, (0, 0, 0))
-        score_total_wipe = scores_font.render("Total score: " + str(score.total_score), False, (255, 255, 255))
-        score_current_screen = scores_font.render(str(score.current_score) + " mistakes to hang!", False, (0, 0, 0))
-        score_current_wipe = scores_font.render(str(score.current_score) + " mistakes to hang!", False, (255, 255, 255))
-
-        score_total_screen_rect = score_total_screen.get_rect()
-        score_total_screen_rect.top = 10
-        score_total_screen_rect.right = 1550
-
-        score_current_screen_rect = score_current_screen.get_rect()
-        score_current_screen_rect.top = 50
-        score_current_screen_rect.right = 1550
-
-        screen.blit(score_total_screen, score_total_screen_rect)
-        screen.blit(score_current_screen, score_current_screen_rect)
+        print_text_right("Total score: " + str(score.total_score), scores_font, BLACK, 1550, 10)
+        print_text_right(str(score.current_score) + " mistakes to hang!", scores_font, BLACK, 1550, 50)
 
         # Start loop to allow user move the player to alphabet tiles
         moving = True
@@ -96,10 +111,11 @@ while game_on:
                     sys.exit()
             
             # Draw hidden keyword on the screen
-            screen.blit(keyword_font.render(keyword.hidden, False, (0, 0, 0)),(500,100))
+            #screen.blit(keyword_font.render(keyword.hidden, False, (0, 0, 0)),(500,100))
+            #print_text_left(keyword.hidden, keyword_font, BLACK, 500, 100)
+            print_keywords(keyword.hidden.split(), BLACK)
 
-
-            all_sprites_group.update()
+            #all_sprites_group.update()
             all_sprites_group.draw(screen)  
             pygame.display.flip()   # Here refreshing the whole screen - neeed to figure out refreshing only sprite rectangulars
             #pygame.display.update(dirty_sprites_rect_list)
@@ -133,35 +149,78 @@ while game_on:
             for letter in collision_list:
                 if letter.letter.upper() in keyword.keyword: 
                     print('Well done!')
+                    #print_text_left(keyword.hidden, keyword_font, WHITE, 500, 100)
+                    print_keywords(keyword.hidden.split(), WHITE)
                     keyword.update(letter.letter); 
-                    screen.blit(keyword_hidden_wipe,(500,100))  # Draw previous hidden keyword state in white to wipe out the screen
+                    #screen.blit(keyword_hidden_wipe,(500,100))  # Draw previous hidden keyword state in white to wipe out the screen
                 else: 
                     print("Wrong!")
+                    print_text_right(str(score.current_score) + " mistakes to hang!", scores_font, WHITE, 1550, 50)
                     score.decrease_current()
 
                 alphabet.update(letter.letter)
-                letter.kill()
+                #letter.kill()
+                all_sprites_group.remove(letter)
                 all_letters.remove(letter)
 
                 screen.blit(background_image, (letter.rect.x, letter.rect.y), (letter.rect.x, letter.rect.y, letter.rect.width, letter.rect.height))
-                pygame.display.update(letter.rect)
+                #pygame.display.update(letter.rect)
 
                 # Trigger new loop
                 moving = False
 
-            clock.tick(60)            
-
+            clock.tick(60)
+        
+        print_text_right(str(score.current_score) + " mistakes to hang!", scores_font, WHITE, 1550, 50)
+        print_text_right("Total score: " + str(score.total_score), scores_font, WHITE, 1550, 10)
 
         # Finish level if whole keyword is uncovered
         if keyword.hidden == keyword.keyword:
             os.system('cls')
-            score.update()
+            screen.blit(background_image, (player.rect.x, player.rect.y), (player.rect.x, player.rect.y, player.rect.width, player.rect.height))
+            pygame.display.update([player.rect])
+            player.rect.x = 400
+            player.rect.y = 0
 
-            input(keyword.keyword + "\n\nGood job! Next round!")
-            os.system('cls')
+            score.update()
+            print_keywords(keyword.keyword.split(), BLACK)
+            pygame.display.update()
+            all_letters = list(all_letters_main)
+            all_sprites_group = all_sprites_group_main.copy()
+
+            clock.tick(60)
+            pygame.time.wait(3000)
+            print_keywords(keyword.keyword.split(), WHITE)
 
         # Finish game if player lost
         elif score.current_score == 0:
-            print("Game over!")
-            print("Your total score is " + str(score.total_score))
-            game_on = False
+            print_keywords(keyword.hidden.split(), WHITE)
+            print_keywords(keyword.keyword.split(), RED)
+            screen.blit(background_image, (500, 400), (500, 400, 1100, 400))
+            print_text_left("Total score: " + str(score.total_score), keyword_font, BLACK, 500, 400)
+            print_text_left("Wanna play again? Y/N", keyword_font, BLACK, 500, 500)
+            pygame.display.update()
+            
+            # ok this is not working but why? meh
+            # maybe I'll figure it out tmrw, time to sleep zzzzzzzzzzzz...
+            game_over = True
+            while game_over:
+                print(pygame.key.get_pressed()[K_UP], pygame.key.get_pressed()[K_DOWN])
+                keystate2 = pygame.key.get_pressed()
+
+                if keystate2[K_y]: 
+                    screen.blit(background_image, (player.rect.x, player.rect.y), (player.rect.x, player.rect.y, player.rect.width, player.rect.height))
+                    print_keywords(keyword.keyword.split(), WHITE)
+                    print_text_left("Total score: " + str(score.total_score), keyword_font, WHITE, 500, 400)
+                    print_text_left("Wanna play again? Y/N", keyword_font, WHITE, 500, 500)
+                    pygame.display.update([player.rect])
+                    player.rect.x = 400
+                    player.rect.y = 0
+                    score.reset()
+                    all_letters = list(all_letters_main)
+                    all_sprites_group = all_sprites_group_main.copy()
+                    game_over = False
+                elif keystate2[K_n]:
+                    game_on = False
+                    game_over = False
+                    
