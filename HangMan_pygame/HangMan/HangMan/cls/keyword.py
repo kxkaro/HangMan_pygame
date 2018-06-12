@@ -12,7 +12,7 @@ class Keyword():
     def __init__(self):
         self.keyword = ""
         self.hidden = ""
-        self.space_indexes = []
+        #self.space_indexes = []
     
     
     @classmethod
@@ -72,7 +72,7 @@ class Keyword():
 
         self.keyword = keywords[random.randint(0, len(keywords)-1)].upper()
         self.hidden = self.keyword
-        self.space_indexes = [m.start() for m in re.finditer(" ", self.keyword)]
+        #self.space_indexes = [m.start() for m in re.finditer(" ", self.keyword)]
         #while ''.join(set(keyword)).replace(" ", "") != ".":
         for c in self.hidden:
             if c in string.ascii_uppercase: self.hidden = self.hidden.replace(c, '_')

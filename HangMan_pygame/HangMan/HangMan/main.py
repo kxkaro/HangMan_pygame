@@ -33,6 +33,26 @@ def print_keywords(kw_list, color):
             print_text_left(c, keyword_font, color, 550 + (30-a)*35, 100 + b*60)
             a -= 1
 
+
+def print_shuffled_alphabet(alphabet):
+        global all_sprites_group; global all_letters
+        all_sprites_group = pygame.sprite.Group()
+        all_letters = []
+        i = 1; j = 1
+
+        for letter in ''.join(random.sample(string.ascii_uppercase, len(string.ascii_uppercase))):
+            letter = Letter("graphics/letter_%s.bmp" %(letter,), letter = letter)
+            letter.rect.x = 500 + i * letter.rect.width
+            letter.rect.y = 400 + j * letter.rect.height
+
+            i += 2
+            if i%19 == 0:   # 9 letters/columns per row, then go to next row
+                i = 1; j += 2
+
+            if letter.letter in alphabet.available: 
+                all_letters.append(letter)
+                all_sprites_group.add(letter)
+
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
@@ -54,7 +74,7 @@ screen = pygame.display.set_mode(size)
 screen.blit(background_image, (0, 0))
 
 # Create sprites and set their positions - player and tiles with alphabet letters
-player = GameObject("graphics/1.bmp", speed = 3)
+player = Player("graphics/1.bmp", speed = 3)
 player.rect.x = 400
 player.rect.y = 0
 
@@ -66,7 +86,7 @@ all_sprites_group.add(player)
 all_letters_main = []; all_letters = []
 i = 1; j = 1
 for letter in string.ascii_uppercase:
-    letter = GameObject("graphics/letter_%s.bmp" %(letter,), letter = letter)
+    letter = Letter("graphics/letter_%s.bmp" %(letter,), letter = letter)
     letter.rect.x = 500 + i * letter.rect.width
     letter.rect.y = 400 + j * letter.rect.height
 
@@ -82,7 +102,7 @@ for letter in string.ascii_uppercase:
 clock = pygame.time.Clock()
 game_on = True
 
-
+t = 0
 
 while game_on:
 
@@ -115,6 +135,14 @@ while game_on:
             #print_text_left(keyword.hidden, keyword_font, BLACK, 500, 100)
             print_keywords(keyword.hidden.split(), BLACK)
 
+
+
+            if pygame.time.get_ticks() > 10000*t:
+                t+=1
+                screen.blit(background_image, (550, 450), (550, 450, 850, 250))
+                print_shuffled_alphabet(alphabet)
+
+
             #all_sprites_group.update()
             all_sprites_group.draw(screen)  
             pygame.display.flip()   # Here refreshing the whole screen - neeed to figure out refreshing only sprite rectangulars
@@ -122,13 +150,13 @@ while game_on:
 
             # Choose direction based on user keyboard control - used in sprite.move method 
             # Limit area of player movement (set borders on screen edges)
-            x, y = 0, 0
-            keystate = pygame.key.get_pressed()
-            if keystate[K_RIGHT] and player.rect.x < (width - player.rect.width): x = 1
-            if keystate[K_LEFT] and player.rect.x > 400: x = -1
-            if keystate[K_DOWN] and player.rect.y < (height - player.rect.height): y = 1
-            if keystate[K_UP] and player.rect.y > 0: y = -1
-            direction = (x, y)
+            #x, y = 0, 0
+            #keystate = pygame.key.get_pressed()
+            #if keystate[K_RIGHT] and player.rect.x < (width - player.rect.width): x = 1
+            #if keystate[K_LEFT] and player.rect.x > 400: x = -1
+            #if keystate[K_DOWN] and player.rect.y < (height - player.rect.height): y = 1
+            #if keystate[K_UP] and player.rect.y > 0: y = -1
+            #direction = (x, y)
 
             # List to keep screen areas to refresh - to avoid refreshing the whole screen each frame (this still needs to be sorted out... meh)
             dirty_rect_list = []
@@ -136,7 +164,7 @@ while game_on:
             # Draw cropped part of background from under player's old position
             screen.blit(background_image, (player.rect.x, player.rect.y), (player.rect.x, player.rect.y, player.rect.width, player.rect.height))
             dirty_rect_list.append(player.rect)
-            player.move(direction)
+            player.move(width, height)
 
             # Draw player in new position and refresh only areas of the previous and current player position
             screen.blit(player.image, (player.rect.x, player.rect.y))
