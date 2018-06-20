@@ -81,7 +81,7 @@ class Menu(State):
 
             if self.active_state == "game": return Game()
             elif self.active_state == "exit": pygame.quit()
-            elif self.active_state == "menu": return Menu()
+            elif self.active_state == "menu": return self
     
     def run_level(self, screen): 
 
@@ -143,8 +143,8 @@ class Game(State):
         self.new_level = True
 
     def process_events(self):
-        if self.game_over:
-            return Menu()
+        if self.active_state == "menu": return Menu()
+        else: return self
 
     
     def run_level(self, screen):
@@ -166,6 +166,9 @@ class Game(State):
             self.check_collision()
             self.check_game_result()
 
+        # Game over screen action - press any key and move to menu
+        else:
+            self.check_key_pressed()
     
     # all_letters list will contain available alphabet letters and will be used in player-letter collision detection 
     def shuffle_alphabet(self):
@@ -211,8 +214,14 @@ class Game(State):
             self.new_level = True
             
         elif self.score.current_score == 0:
-            self.active_state = "menu"
+            self.active_state = "game_over"
             self.game_over = True
+
+    
+    def check_key_pressed():
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN: 
+                self.active_state = "menu"
 
 
     def display_frame(self, screen):
@@ -223,18 +232,26 @@ class Game(State):
         # clean game area
         screen.fill(WHITE, (400, 0, 1200, 800))
 
-        # draw alphabet letters
-        self.all_sprites_group.draw(screen) 
+        if not self.game_over:
 
-        # Draw keyword on the screen
-        self.draw_keyword(screen, self.keyword.hidden.split(), BLACK)
+            # draw alphabet letters
+            self.all_sprites_group.draw(screen) 
+
+            # Draw keyword on the screen
+            self.draw_keyword(screen, self.keyword.hidden.split(), BLACK)
 
 
-        # Draw scores in right top corner
-        self.draw_game_results(screen, self.score, BLACK)
+            # Draw scores in right top corner
+            self.draw_game_results(screen, self.score, BLACK)
 
-        # update player image in new position
-        screen.blit(self.player.image, (self.player.rect.x, self.player.rect.y))
+            # update player image in new position
+            screen.blit(self.player.image, (self.player.rect.x, self.player.rect.y))
+
+        # Game over screen
+        else:
+            game_over_text = "You lost! \nTotal score: {} \nPress any key to continue".format(self.score.total_score)
+            font = pygame.font.SysFont('Arial', 50)
+            draw_text(screen, game_over_text, font, BLACK, "L", 500, 300)
 
         pygame.display.update()
 

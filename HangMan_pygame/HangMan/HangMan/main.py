@@ -18,16 +18,15 @@ size = width, height = background_image.get_rect().width, background_image.get_r
 screen = pygame.display.set_mode(size)
 screen.blit(background_image, (0, 0))
 
-Keyword.initialize_list()
+Keyword.initialize_list(["aaaaaaaaaaaaaaaaaaaaaa"])
 
 done = False
 clock = pygame.time.Clock()
 game_state = Menu()
 
 while not done:
-    print(game_state.__class__, game_state.process_events().__class__)
     if game_state.__class__ != game_state.process_events().__class__: 
-        print(game_state.__class__, game_state.process_events().__class__)
+        
         game_state = game_state.process_events()
 
     game_state.run_level(screen)
