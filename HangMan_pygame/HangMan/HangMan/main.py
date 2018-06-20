@@ -7,9 +7,6 @@ from cls.alphabet import *
 from cls.score import *
 from cls.game import *
 
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
 
 # Set fonts for drawing 
 pygame.init()
@@ -21,19 +18,23 @@ size = width, height = background_image.get_rect().width, background_image.get_r
 screen = pygame.display.set_mode(size)
 screen.blit(background_image, (0, 0))
 
+Keyword.initialize_list()
+
 done = False
 clock = pygame.time.Clock()
-game = Game()
+game_state = Menu()
 
 while not done:
+    print(game_state.__class__, game_state.process_events().__class__)
+    if game_state.__class__ != game_state.process_events().__class__: 
+        print(game_state.__class__, game_state.process_events().__class__)
+        game_state = game_state.process_events()
 
-    done = game.process_events()
+    game_state.run_level(screen)
 
-    game.run_level(background_image)
-
-    game.display_frame(screen)
-
+    game_state.display_frame(screen)
+    
     clock.tick(60)
 
 
-pygame.quit()
+#pygame.quit()

@@ -41,24 +41,90 @@ class Player(pygame.sprite.Sprite):
         #self.collider_rect.y += self.speed * direction[1]
 
 
-class Game():
+class State:
+    
+    def __init__(self):
+        self.active_state = ""
 
-    all_letters = None
-    all_sprites_group = None
-    player = None
-    keyword = Keyword()
-    alphabet = Alphabet()
-    score = Score(3)
-    t_shuffle = 0
+    def process_events(self):
+        raise NotImplementedError
+    
+    def run_level(self, input_code):
+        raise NotImplementedError
+    
+    def display_frame(self, input_code):
+        raise NotImplementedError
 
-    game_over = False
-    new_level = True
-    level = None
+
+class Menu(State):
+    
+    OPTIONS = ["Play", "Exit"]
 
     def __init__(self):
+        State.__init__(self)
+        self.active_state = "menu"
+        self.selected_index = 0
+        self.exit = False
+
+
+    def _next_index(self):
+        max = len(self.OPTIONS)
+        return (self.selected_index + 1) % max
+
+
+    def _previous_index(self):
+        max = len(self.OPTIONS)
+        return (self.selected_index - 1) % max
+
+
+    def process_events(self):
+
+            if self.active_state == "game": return Game()
+            elif self.active_state == "exit": pygame.quit()
+            elif self.active_state == "menu": return Menu()
+    
+    def run_level(self, screen): 
+
+        for event in pygame.event.get():
+
+            if event.type == pygame.KEYDOWN:
+
+                if event.key == pygame.K_DOWN and self.selected_index < (len(self.OPTIONS) - 1):
+                    self.selected_index = self._next_index()
+
+                if event.key == pygame.K_UP and self.selected_index > 0:
+                    self.selected_index = self._previous_index()
+
+                if event.key == pygame.K_KP_ENTER or event.key == pygame.K_RETURN:
+                   if self.selected_index == 0: self.active_state = "game"
+                   elif self.selected_index == 1: pygame.quit()
+
+
+    def display_frame(self, screen):
+        font = pygame.font.SysFont('Arial', 60)
+        BLACK = (0, 0, 0); WHITE = (255, 255, 255); RED = (255, 0, 0)
+        selected_marker = ">"; unselected_marker = " "
+
+        # clean game area
+        screen.fill(WHITE, (400, 0, 1200, 800))
+
+        for i in range(len(self.OPTIONS)):
+            if i == self.selected_index: text = "{} {}".format(selected_marker, self.OPTIONS[i])
+            else: text = "{} {}".format(unselected_marker, self.OPTIONS[i])
+
+            draw_text(screen, text, font, BLACK, "L", 500, 300 + i*100)
+
+        pygame.display.update()
+
+
+class Game(State):
+
+    def __init__(self):
+        State.__init__(self)
+        self.active_state = "game"
         self.level = 1
 
-        Keyword.initialize_list()
+        #Keyword.initialize_list()
 
         self.all_letters = []
         self.all_sprites_group = pygame.sprite.Group()
@@ -67,20 +133,18 @@ class Game():
         self.player.rect.x = 400
         self.all_sprites_group.add(self.player)
 
+        self.keyword = Keyword()
+        self.alphabet = Alphabet()
+        self.score = Score(3)
+
+        self.t_shuffle = 0
+
         self.game_over = False
         self.new_level = True
 
-
     def process_events(self):
         if self.game_over:
-            return True
-
-        for event in pygame.event.get():
-            if event.type in (QUIT, K_n):
-                return True
-            if event.type == pygame.K_y:
-                if self.game_over:
-                    self.__init__()
+            return Menu()
 
     
     def run_level(self, screen):
@@ -147,6 +211,7 @@ class Game():
             self.new_level = True
             
         elif self.score.current_score == 0:
+            self.active_state = "menu"
             self.game_over = True
 
 
@@ -181,7 +246,7 @@ class Game():
             word = word + " "
             if len(word) > a: a = 30; b +=1
             for c in word:
-                self.draw_text(screen, c, font, color, "L", 550 + (30-a)*35, 100 + b*60)
+                draw_text(screen, c, font, color, "L", (550 + (30-a)*35), (100 + b*60))
                 a -= 1    
 
 
@@ -191,17 +256,15 @@ class Game():
                              "Total score: {}".format(str(score.total_score)), 
                              "{} mistakes to hang!".format(str(score.current_score))]
         
-        n = 0
-        for result in game_results_list:
-            self.draw_text(screen, result, font, color, "R", 1550, 10 + n*30)
-            n += 1
+        for n, result in enumerate(game_results_list):
+            draw_text(screen, result, font, color, "R", 1550, (10 + n*30))
 
 
-    def draw_text(self, screen, text, font, color, side, side_px, top_px):
-        text_screen = font.render(text, False, color)
-        text_screen_rect = text_screen.get_rect()
-        text_screen_rect.top = top_px
-        if side == "R": text_screen_rect.right = side_px
-        if side == "L": text_screen_rect.left = side_px
+def draw_text(screen, text, font, color, side, side_px, top_px):
+    text_screen = font.render(text, False, color)
+    text_screen_rect = text_screen.get_rect()
+    text_screen_rect.top = top_px
+    if side == "R": text_screen_rect.right = side_px
+    if side == "L": text_screen_rect.left = side_px
 
-        screen.blit(text_screen, text_screen_rect)
+    screen.blit(text_screen, text_screen_rect)
