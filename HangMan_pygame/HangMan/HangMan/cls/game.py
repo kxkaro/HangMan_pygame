@@ -134,7 +134,7 @@ class Game(State):
     def __init__(self):
         State.__init__(self)
         self.active_state = "game"
-        self.level = 1
+        self.level = 0
 
         #Keyword.initialize_list()
 
@@ -147,7 +147,7 @@ class Game(State):
 
         self.keyword = Keyword()
         self.alphabet = Alphabet()
-        self.score = Score(3)
+        self.score = Score(5)
 
         self.t_shuffle = 0
 
@@ -163,8 +163,11 @@ class Game(State):
     def run_level(self, screen, events):
 
         if self.new_level:
+            self.level += 1
+            self.score.update(self.level)
             self.keyword.assign_new(self.keyword.keywords_list)
             self.alphabet.reset()
+            self.shuffle_alphabet()
             self.player.rect.x = 400
             self.player.rect.y = 0
             self.new_level = False
@@ -172,7 +175,7 @@ class Game(State):
         if not self.game_over:
 
             if not self.won_level:
-                if pygame.time.get_ticks() > 10000 * self.t_shuffle:
+                if pygame.time.get_ticks() > 15000 * self.t_shuffle:
                     self.t_shuffle += 1
                     self.shuffle_alphabet()
 
@@ -227,9 +230,7 @@ class Game(State):
 
     def check_game_result(self):
         if self.keyword.hidden == self.keyword.keyword:
-            self.score.update()
-            self.level += 1
-            self.new_level, self.won_level = True, True
+            self.won_level = True
             
         elif self.score.current_score == 0:
             self.game_over = True
@@ -237,14 +238,18 @@ class Game(State):
     
     def game_over_continue(self, events):
         for event in events:
-            if event.type == pygame.KEYDOWN: 
-                self.active_state = "menu"
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_y:
+                    self.active_state = "menu"
+                elif event.key == pygame.K_n:
+                    self.exit = True
 
 
     def won_level_continue(self, events):
         for event in events:
-            if event.type == pygame.KEYDOWN: 
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_y: 
                 self.won_level = False
+                self.new_level = True
 
 
     def display_frame(self, screen):
@@ -265,13 +270,14 @@ class Game(State):
 
             # you won level screen
             else:
-                won_level_text = ["Level {} beated!", "Press any key to continue".format(self.level)]
+                # self.level - 1 because drawing takes place in main after score was increased
+                won_level_text = ["Level " + str(self.level) + " beated!", "Press Y key to continue"]
                 for i, text in enumerate(won_level_text):
                     draw_text(screen, text, font, BLACK, "L", 500, 300 + i * 50)
 
         # Game over screen
         else:
-            game_over_text = ["You lost!", "Total score: {}".format(self.score.total_score),  "Press any key to continue"]
+            game_over_text = ["You lost!", "Total score: {}".format(self.score.total_score),  "Do you want to continue? Y/N"]
             for i, text in enumerate(game_over_text):
                 draw_text(screen, text, font, BLACK, "L", 500, 300 + i * 50)
 
